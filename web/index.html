@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Умная диагностика — Загрузка данных</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.header {
+    width: 100%;
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    color: #fff;
+    padding: 32px 24px;
+    text-align: center;
+}
+.header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.header .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+.container {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+.upload-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 40px 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+}
+.upload-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    fill: none;
+    stroke: #2563eb;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+}
+.upload-card h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 24px;
+}
+.file-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.file-row input[type="text"] {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.file-row input[type="text"]:focus {
+    border-color: #2563eb;
+    background: #fff;
+}
+.file-row input[type="file"] { display: none; }
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    white-space: nowrap;
+}
+.btn-browse {
+    background: #e2e8f0;
+    color: #475569;
+}
+.btn-browse:hover { background: #cbd5e1; }
+.btn-upload {
+    width: 100%;
+    background: #2563eb;
+    color: #fff;
+    font-size: 16px;
+    padding: 14px 24px;
+}
+.btn-upload:hover { background: #1d4ed8; }
+.btn-upload:disabled {
+    background: #93c5fd;
+    cursor: not-allowed;
+}
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.result {
+    display: none;
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: left;
+}
+.result.ok {
+    display: block;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+.result.error {
+    display: block;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.result .msg { font-weight: 600; margin-bottom: 8px; }
+.result .reports { font-size: 13px; }
+.result .reports a {
+    color: #2563eb;
+    text-decoration: none;
+    display: inline-block;
+    margin: 2px 0;
+}
+.result .reports a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>Умная диагностика</h1>
+    <div class="subtitle">Результаты мониторинга</div>
+</div>
+<div class="container">
+    <div class="upload-card">
+        <svg class="upload-icon" viewBox="0 0 64 64">
+            <path d="M48 44a10 10 0 0 0-10-10H26a10 10 0 0 0 0 20h4"/>
+            <path d="M36 28V8"/>
+            <path d="M28 16l8-8 8 8"/>
+        </svg>
+        <h2>Выбрать данные для обработки</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="file-row">
+                <input type="text" id="filePath" placeholder="Файл не выбран" readonly>
+                <input type="file" id="fileInput" name="file" accept=".csv,.xlsx,.xls">
+                <button type="button" class="btn btn-browse" onclick="document.getElementById('fileInput').click()">Обзор</button>
+            </div>
+            <button type="submit" class="btn btn-upload" id="uploadBtn" disabled>
+                <span class="spinner" id="spinner"></span>
+                <span id="btnText">Загрузить файл</span>
+            </button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+</div>
+<script>
+const fileInput = document.getElementById('fileInput');
+const filePath = document.getElementById('filePath');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadForm = document.getElementById('uploadForm');
+const result = document.getElementById('result');
+const spinner = document.getElementById('spinner');
+const btnText = document.getElementById('btnText');
+
+if (window.location.protocol === 'file:') {
+    document.body.innerHTML = `
+    <div class="header">
+        <h1>Умная диагностика</h1>
+        <div class="subtitle">Результаты мониторинга</div>
+    </div>
+    <div class="container">
+        <div class="upload-card" style="border:2px solid #fecaca;">
+            <h2 style="color:#991b1b;">Ошибка: страница открыта через file://</h2>
+            <p style="font-size:14px;line-height:1.6;color:#475569;">
+                Запустите сервер через терминал и откройте страницу по адресу
+                <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">http://127.0.0.1:5000/</code>
+            </p>
+            <pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;margin-top:12px;font-size:13px;text-align:left;">
+cd C:\\Users\\User\\um_diagnost
+python web/app.py</pre>
+        </div>
+    </div>`;
+} else {
+    fileInput.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) {
+        filePath.value = this.files[0].name;
+        uploadBtn.disabled = false;
+        result.className = 'result';
+        result.innerHTML = '';
+    } else {
+        filePath.value = '';
+        uploadBtn.disabled = true;
+    }
+});
+
+uploadForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!fileInput.files || !fileInput.files[0]) return;
+
+    result.className = 'result';
+    result.innerHTML = '';
+    uploadBtn.disabled = true;
+    spinner.style.display = 'inline-block';
+    btnText.textContent = 'Загрузка...';
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+            let reportsHtml = '';
+            if (data.reports) {
+                const links = [];
+                if (data.reports.summary) links.push(`<a href="/${data.reports.summary}">📄 Отчёт (Markdown)</a>`);
+                if (data.reports.dashboard) links.push(`<a href="/${data.reports.dashboard}">📊 Дашборд (HTML)</a>`);
+                if (data.reports.pdf) links.push(`<a href="/${data.reports.pdf}">📕 Отчёт (PDF)</a>`);
+                if (links.length) reportsHtml = `<div class="reports">${links.join('<br>')}</div>`;
+            }
+            result.className = 'result ok';
+            result.innerHTML = `<div class="msg">✅ ${data.message}</div>${reportsHtml}`;
+            filePath.value = '';
+            fileInput.value = '';
+        } else {
+            result.className = 'result error';
+            result.innerHTML = `<div class="msg">❌ ${data.message}</div>`;
+        }
+    } catch (err) {
+        result.className = 'result error';
+        result.innerHTML = `<div class="msg">❌ Ошибка соединения с сервером</div>
+        <div style="font-size:12px;color:#64748b;margin-top:6px;">Убедитесь, что сервер запущен: <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">python web/app.py</code></div>`;
+    } finally {
+        uploadBtn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.textContent = 'Загрузить файл';
+    }
+}); }
+</script>
+</body>
+</html>

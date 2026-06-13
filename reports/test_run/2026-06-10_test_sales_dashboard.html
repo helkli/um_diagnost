@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Умная диагностика — test_sales.csv</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
+.header { background: linear-gradient(135deg, #1e40af, #2563eb); color: #fff; padding: 24px 32px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header .meta { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+.kpi-card .value { font-size: 28px; font-weight: 700; color: #1e40af; }
+.kpi-card .label { font-size: 12px; color: #64748b; margin-top: 4px; }
+.kpi-card.warn .value { color: #dc2626; }
+.kpi-card.ok .value { color: #16a34a; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.chart-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.chart-card h3 { font-size: 14px; color: #475569; margin-bottom: 12px; }
+.chart-card canvas { max-height: 280px; }
+.section { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
+.section h2 { font-size: 16px; color: #1e293b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+th { color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.severity-high { background: #fef2f2; }
+.severity-mid { background: #fffbeb; }
+.severity-low { background: #f0fdf4; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.badge-high { background: #fecaca; color: #991b1b; }
+.badge-mid { background: #fde68a; color: #92400e; }
+.badge-low { background: #bbf7d0; color: #166534; }
+.rec-item { display: flex; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+.rec-high { background: #fef2f2; border-left: 4px solid #dc2626; }
+.rec-mid { background: #fffbeb; border-left: 4px solid #f59e0b; }
+.rec-low { background: #f0fdf4; border-left: 4px solid #16a34a; }
+.rec-priority { font-size: 11px; font-weight: 700; min-width: 60px; }
+.rec-action { font-size: 14px; font-weight: 500; }
+.rec-effect { font-size: 12px; color: #64748b; margin-top: 2px; }
+@media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>Умная диагностика — test_sales.csv</h1>
+    <div class="meta">2026-06-10 &middot; C:\Users\User\um_diagnost\data\raw\test_sales.csv</div>
+</div>
+<div class="container">
+    <div class="kpi-row">
+        
+        <div class="kpi-card"><div class="value">55</div><div class="label">Строк</div></div>
+        <div class="kpi-card"><div class="value">7</div><div class="label">Столбцов</div></div>
+        <div class="kpi-card "><div class="value">0.5%</div><div class="label">Пропуски</div></div>
+        <div class="kpi-card ok"><div class="value">0.0%</div><div class="label">Дубликаты</div></div>
+        <div class="kpi-card"><div class="value">2</div><div class="label">Проблемы</div></div>
+    
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card"><h3>Пропуски по столбцам</h3><canvas id="chartMissing"></canvas></div>
+        <div class="chart-card"><h3>Распределение (первый числовой столбец)</h3><canvas id="chartDist"></canvas></div>
+    </div>
+
+    <div class="section">
+        <h2>Проблемы</h2>
+        <table>
+        <thead><tr><th>#</th><th>Тип</th><th>Описание</th><th>Серьёзность</th></tr></thead>
+        <tbody><tr class="severity-mid">
+            <td>1</td>
+            <td>Выбросы</td>
+            <td>Столбец 'total': 1 выбросов (IQR-метод). Примеры: 45: 450000</td>
+            <td><span class="badge badge-mid">Средняя</span></td>
+        </tr><tr class="severity-low">
+            <td>2</td>
+            <td>Пропуски</td>
+            <td>Столбец 'product' пуст в 2 строках (3.6%)</td>
+            <td><span class="badge badge-low">Низкая</span></td>
+        </tr></tbody>
+    </table>
+    </div>
+
+    <div class="section">
+        <h2>Рекомендации</h2>
+        <div class="rec-item rec-mid">
+            <div class="rec-priority">Средний</div>
+            <div class="rec-body">
+                <div class="rec-action">Проанализировать выбросы на предмет ошибок ввода</div>
+                <div class="rec-effect">Стабильность метрик</div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+            (function() {
+                var ctx = document.getElementById('chartMissing').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ["product"],
+                        datasets: [{
+                            label: '% пропусков',
+                            data: [3.6],
+                            backgroundColor: '#f87171',
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            })();
+            
+        (function() {
+            var ctx = document.getElementById('chartDist').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["1.0-1.4", "", "1.7-2.0", "", "2.4-2.8", "", "3.1-3.5", "", "3.8-4.2", "", "4.5-4.8", "", "5.2-5.5", "", "5.9-6.2", "", "6.6-7.0", "", "7.3-7.7", ""],
+                    datasets: [{
+                        label: 'Количество',
+                        data: [7, 0, 10, 0, 0, 10, 0, 0, 7, 0, 0, 8, 0, 0, 6, 0, 0, 3, 0, 4],
+                        backgroundColor: '#2563eb80',
+                        borderColor: '#2563eb',
+                        borderWidth: 1,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        })();
+        
+</script>
+</body>
+</html>
