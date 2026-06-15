@@ -6,7 +6,7 @@
 
 [Скриншот карточки со ссылкой на результаты обработки](https://github.com/helkli/um_diagnost/blob/master/image/2026-06-14_23-17-14.png)
 
-[Скриншот дашборда]()
+[Скриншот дашборда](https://github.com/helkli/um_diagnost/blob/master/image/2026-06-14_23-18-30.png)
 
 ## Пользователь
 
